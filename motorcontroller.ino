@@ -67,5 +67,6 @@ void load_job() {
       break;
     }
   }
+  letter_pos=~0;
 }
 
