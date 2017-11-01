@@ -5,7 +5,7 @@ uint32_t const MOVE_HEAD_PIN; //assign these to something
 uint32_t const SET_HEAD_PIN;
 uint32_t const FEED_PIN;
 #define BUFFER_SIZE 500
-char* job;
+char job[BUFFER_SIZE];
 uint32_t letter_pos;
 uint32_t x;//, y, z;
 uint32_t const //num_rows = 24,
@@ -61,8 +61,6 @@ inline void wait_pin(uint32_t pin) {
 }
 void load_job() {
   letter_pos = ~0;
-  free(job);
-  while (!(job = malloc(buffer_size)));
   while (1) {
     job[++letter_pos] = Serial.read();
     if (job[letter_pos] == END_FILE_CHAR) {
