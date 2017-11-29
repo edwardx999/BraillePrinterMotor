@@ -6,21 +6,26 @@
 // Left and right stepper motor
 AF_Stepper Lstep(48, 1);    //# steps per rev, port #
 AF_Stepper Rstep(48, 2);
-
+#define int unsigned int
+int x_max = 35,y_max = 25;
 int letter = 0;
 int x = 0; // column (i.e. which character)
 int y = 0; // row (i.e. which line)
 int z = 0; // z = 0 means paper is full or no paper. Consider renaming bool paperFed
 // These are being used as digital pins despite being analog
 int embossingDonePinA0 = A0; // When DigitalRead() == LOW, embossing is still running
-int slideRightCommandPinA1 = A1; // Writing HIGH means sliding the embosser right, Low means stop
-int slideRightDonePinA2 = A2;
+int slideRightCommandPinA1 = A1; // Writing HIGH means sliding the embosser right, LOW means stop (OUTPUT)
+int slideRightDonePinA2 = A2; // digitalRead(<-) means sliding carriage over not done (INPUT)
 int embossingCommandPinA3 = A3;
 int slideLeftHomeCommandPinA4 = A4;
 int DCmotorLogic1Pin9 = 9; // These two pins control the actuator. Both are needed to run it
 int DCmotorLogic2Pin2 = 2; // However, they can be set in the same or different directions
 // /\ 2 pins switch on/off respective sections of the H-bridge (maybe) 
 int DCmotorEnablePin13 = 13;
+/*
+ * FUTURE IMPLEMENTATION:
+ * load all letters, convert letters to commands and run through commands
+ */
 
 void setup() {
   Serial.begin(9600);
@@ -110,12 +115,15 @@ void loop() {
             delay(25);
             digitalWrite(slideRightCommandPinA1, LOW);
           }
-
+          /* NEED TO KNOW: MOTOR DELAYS OF STOPING MOTOR IN BLOCK ABOVE 
+           *               HOW MOTOR REACTS TO ON AND OFF SIGNALS
+           *               WHY delay(25) (only once)?
+          */
           do {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
         }
         break;
 
@@ -146,7 +154,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -174,10 +182,10 @@ void loop() {
           }
 
           do {
-            delay(1);                           // wait for embossing to finish
+            delay(1);                           // wait for embossing to finish; this comment is wrong
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -208,7 +216,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -239,7 +247,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -270,7 +278,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -301,7 +309,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -332,7 +340,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -363,7 +371,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -394,7 +402,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -425,7 +433,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -456,7 +464,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -487,7 +495,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -518,7 +526,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -549,7 +557,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -580,7 +588,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -611,7 +619,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -642,7 +650,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -673,7 +681,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -704,7 +712,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -735,7 +743,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -766,7 +774,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -797,7 +805,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -828,7 +836,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -859,7 +867,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -890,7 +898,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -921,7 +929,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -952,7 +960,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -983,7 +991,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1014,7 +1022,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1045,7 +1053,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1076,11 +1084,11 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
-      case '“':
+      case '|'://'“':
         if (x < 35 && y < 25) {
           Lstep.step(6, BACKWARD, SINGLE);
           Rstep.step(18, FORWARD, SINGLE);
@@ -1107,11 +1115,11 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
-      case '”':
+      case '>'://'”':
         if (x < 35 && y < 25) {
           Lstep.step(24, FORWARD, SINGLE);
           Rstep.step(18, BACKWARD, SINGLE);
@@ -1138,11 +1146,11 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
-      case '’':
+      case '<'://'’':
         if (x < 35 && y < 25) {
           Lstep.step(24, FORWARD, SINGLE);
           Rstep.step(6, FORWARD, SINGLE);
@@ -1169,7 +1177,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1200,7 +1208,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1231,7 +1239,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1262,7 +1270,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1293,7 +1301,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
@@ -1324,7 +1332,7 @@ void loop() {
             delay(1);                           // wait for embossing to finish
           } while (digitalRead(slideRightDonePinA2) == LOW);
 
-          x++;
+          ++x;
 
         } break;
 
