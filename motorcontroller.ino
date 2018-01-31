@@ -1,4 +1,6 @@
 #include <AFMotor.h>
+#define abs(x) ((x)<0)?(-(x)):(x)
+#define dir(x) ((x)<0)?(BACKWARD):(FORWARD)
 char const END_FILE_CHAR = 3;
 uint32_t const SERIAL_NUMBER = 9600;
 uint32_t const MOVE_HEAD_PIN; //assign these to something
@@ -6,10 +8,20 @@ uint32_t const SET_HEAD_PIN;
 uint32_t const FEED_PIN;
 #define BUFFER_SIZE 500
 char job[BUFFER_SIZE];
+typedef signed char posn;
+typedef struct {
+  posn left, right;
+} step_posns;
+step_posns posns[128];
 uint32_t letter_pos;
 uint32_t x;//, y, z;
 uint32_t const //num_rows = 24,
+
 num_cols = 25;
+AF_Stepper step_left(48, 1);
+AF_Stepper step_right(48, 1);
+signed char sl_current=0;
+signed char sr_current=0;
 
 void load_job();
 void feed_paper();
@@ -17,7 +29,7 @@ void spool_paper();
 bool is_paper_fed();
 void move_head();
 void print_head();
-void set_head();
+void set_head(char code);
 void wait_pin(uint32_t);
 void load_job();
 
@@ -55,7 +67,14 @@ inline bool is_paper_fed() {
 }
 inline void move_head() {}
 inline void print_head() {}
-inline void set_head() {}
+inline void set_head(char code) {
+  int difference =  posns[code].left - sl_current;
+  step_left.step(abs(difference), dir(difference), SINGLE);
+  sl_current = posns[code].left;
+  difference = posns[code].right - sr_current;
+  step_right.step(abs(difference), dir(difference), SINGLE);
+  sr_current = posns[code].right;
+}
 inline void wait_pin(uint32_t pin) {
   while (digitalRead(pin) == LOW);
 }
@@ -67,6 +86,6 @@ void load_job() {
       break;
     }
   }
-  letter_pos=~0;
+  letter_pos = ~0;
 }
 

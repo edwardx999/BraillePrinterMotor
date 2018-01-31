@@ -16,8 +16,8 @@ int z = 0; // z = 0 means paper is full or no paper. Consider renaming bool pape
 int embossingDonePinA0 = A0; // When DigitalRead() == LOW, embossing is still running
 int slideRightCommandPinA1 = A1; // Writing HIGH means sliding the embosser right, LOW means stop (OUTPUT)
 int slideRightDonePinA2 = A2; // digitalRead(<-) means sliding carriage over not done (INPUT)
-int embossingCommandPinA3 = A3;
-int slideLeftHomeCommandPinA4 = A4;
+int embossingCommandPinA3 = A3; //pushes emboss head down
+int slideLeftHomeCommandPinA4 = A4; //turns motor left
 int DCmotorLogic1Pin9 = 9; // These two pins control the actuator. Both are needed to run it
 int DCmotorLogic2Pin2 = 2; // However, they can be set in the same or different directions
 // /\ 2 pins switch on/off respective sections of the H-bridge (maybe) 
