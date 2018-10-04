@@ -1,0 +1,9 @@
+x is the x coordinate of the print head.
+The y coordinate is irrelevant as the head does not move vertically. 
+It should be replaced with a read as to whether the paper is fed.
+The z coordinate therefore is also irrelevant.
+
+x will be increment until the max number of rows is reached 
+	(this max number could be made dynamic with a sensor).
+Then the paper will be spooled by one row and the head will be returned to x=0.
+If there is no more paper, printing is paused.
