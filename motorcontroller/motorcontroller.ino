@@ -95,7 +95,7 @@ void spool_paper();
 bool is_paper_fed();
 void move_head();
 void print_head();
-void set_head(char code);
+void set_head(unsigned char code);
 void wait_pin(uint32_t);
 void load_job();
 
@@ -110,17 +110,20 @@ void setup() {
 
 void loop() {
   if (Serial.available()) {
-    char code = Serial.read();
+    unsigned char code = Serial.read();
     move_head();
     //wait_pin(FEED_PIN);
     //wait_pin(MOVE_HEAD_PIN);
     if (code < 65) {
       set_head(code);
-      wait_pin(SET_HEAD_PIN);
+      //wait_pin(SET_HEAD_PIN);
       print_head();
     }
     ++x;
-    x %= num_cols; 
+    if(x==num_cols){
+      x=0;
+      feed_paper();
+    }
   }
   else {
     x = 0;
@@ -137,11 +140,12 @@ inline bool is_paper_fed() {
 inline void move_head() {}
 inline void print_head() {
   digitalWrite(EMBOSS_PUSH_PIN, HIGH);
+  delay(10);//wait for slave to write EMBOSS_PUSH_PIN to HIGH
   while (digitalRead(EMBOSS_DONE_PIN) == LOW);
   //delay(1000);
   digitalWrite(EMBOSS_PUSH_PIN, LOW);
 }
-inline void set_head(char code) {
+inline void set_head(unsigned char code) {
   step_posns posn = posns[code];
   int difference =  posn.left - current.left;
   motor_signed_step(step_left, difference);
@@ -159,10 +163,7 @@ inline void motor_signed_step(AF_Stepper& motor, posn pos) {
   if (pos < 0) {
     motor.step(-pos, BACKWARD, DOUBLE);
   }
-  else {
+  else if(pos) {
     motor.step(pos, FORWARD, DOUBLE);
   }
 }
-
-
-
