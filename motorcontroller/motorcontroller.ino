@@ -1,4 +1,37 @@
 #include <AFMotor.h>
+template<typename T>
+struct make_signed {
+  typedef T type;
+};
+template<>
+struct make_signed<unsigned char> {
+  typedef char type;
+};
+template<typename T>
+typename make_signed<T>::type min_modular_distance(T a, T b, T mn, T mx)
+{
+  typedef typename make_signed<T>::type Ret;
+  if (a < b)
+  {
+    Ret forward_dist = b - a;
+    Ret backward_dist = a - mn + mx - b;
+    if (forward_dist <= backward_dist)
+    {
+      return forward_dist;
+    }
+    return (backward_dist *= -1);
+  }
+  else
+  {
+    Ret forward_dist = mx - a + b - mn;
+    Ret backward_dist = a - b;
+    if (forward_dist <= backward_dist)
+    {
+      return forward_dist;
+    }
+    return (backward_dist *= -1);
+  }
+}
 char const END_FILE_CHAR = 3;
 uint32_t const SERIAL_NUMBER = 9600;
 uint32_t const MOVE_HEAD_PIN; //assign these to something
@@ -15,7 +48,7 @@ typedef struct {
   posn left, right;
 } step_posns;
 step_posns const posns[65] = { //arduino doesn't support constexpr that well so it's all declared here now
-  {0,0},     //0
+  {0, 0},    //0
   {24, 6}, //1
   { -6, 6}, //2
   {24, 24}, //3
@@ -86,7 +119,7 @@ uint32_t const //num_rows = 24,
 num_cols = 25;
 AF_Stepper step_left(48, 1);
 AF_Stepper step_right(48, 2);
-step_posns current={0,0};
+step_posns current = {0, 0};
 
 void motor_signed_step(AF_Stepper& motor, posn pos);
 //void load_job();
@@ -120,8 +153,8 @@ void loop() {
       print_head();
     }
     ++x;
-    if(x==num_cols){
-      x=0;
+    if (x == num_cols) {
+      x = 0;
       feed_paper();
     }
   }
@@ -141,29 +174,31 @@ inline void move_head() {}
 inline void print_head() {
   digitalWrite(EMBOSS_PUSH_PIN, HIGH);
   delay(10);//wait for slave to write EMBOSS_PUSH_PIN to HIGH
-  while (digitalRead(EMBOSS_DONE_PIN) == LOW);
+  wait_pin(EMBOSS_DONE_PIN);
   //delay(1000);
   digitalWrite(EMBOSS_PUSH_PIN, LOW);
 }
 inline void set_head(unsigned char code) {
+  posn min_pos = -24;
+  posn max_pos = 24;
   step_posns posn = posns[code];
-  int difference =  posn.left - current.left;
+  int difference =  min_modular_distance(current.left, posn.left, min_pos, max_pos);
   motor_signed_step(step_left, difference);
   current.left = posn.left;
 
-  difference = posn.right - current.right;
+  difference = min_modular_distance(current.right, posn.right, min_pos, max_pos);
   motor_signed_step(step_right, difference);
   current.right = posn.right;
 }
 inline void wait_pin(uint32_t pin) {
-  while (digitalRead(pin) == LOW);
+  while (digitalRead(pin) == HIGH);
 }
 
 inline void motor_signed_step(AF_Stepper& motor, posn pos) {
   if (pos < 0) {
     motor.step(-pos, BACKWARD, DOUBLE);
   }
-  else if(pos) {
+  else if (pos) {
     motor.step(pos, FORWARD, DOUBLE);
   }
 }
