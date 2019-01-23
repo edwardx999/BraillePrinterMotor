@@ -1,4 +1,4 @@
-#include <AFMotor.h>
+m#include <AFMotor.h>
 template<typename T>
 struct make_signed {
   typedef T type;
@@ -11,6 +11,10 @@ template<typename T>
 typename make_signed<T>::type min_modular_distance(T a, T b, T mn, T mx)
 {
   typedef typename make_signed<T>::type Ret;
+  if(a == b)
+  {
+     return 0;
+  }
   if (a < b)
   {
     Ret forward_dist = b - a;
