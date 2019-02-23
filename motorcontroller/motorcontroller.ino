@@ -1,4 +1,6 @@
-m#include <AFMotor.h>
+#include <Adafruit_MotorShield.h>
+Adafruit_MotorShield shield;
+
 template<typename T>
 struct make_signed {
   typedef T type;
@@ -38,8 +40,8 @@ typename make_signed<T>::type min_modular_distance(T a, T b, T mn, T mx)
 }
 char const END_FILE_CHAR = 3;
 uint32_t const SERIAL_NUMBER = 9600;
-uint32_t const MOVE_HEAD_PIN; //assign these to something
-uint32_t const SET_HEAD_PIN;
+uint32_t const MOVE_HEAD_PIN=-1; //assign these to something
+uint32_t const SET_HEAD_PIN=-1;
 uint32_t const EMBOSS_PUSH_PIN = A3;
 uint32_t const EMBOSS_DONE_PIN = A0;
 uint32_t const FEED_PIN = 9;
@@ -121,11 +123,11 @@ step_posns const posns[65] = { //arduino doesn't support constexpr that well so 
 uint32_t x;//, y, z;
 uint32_t const //num_rows = 24,
 num_cols = 25;
-AF_Stepper step_left(48, 1);
-AF_Stepper step_right(48, 2);
+auto& step_left=*shield.getStepper(48, 1);
+auto& step_right=*shield.getStepper(48,2);
 step_posns current = {0, 0};
 
-void motor_signed_step(AF_Stepper& motor, posn pos);
+void motor_signed_step(Adafruit_StepperMotor& motor, posn pos);
 //void load_job();
 void feed_paper();
 void spool_paper();
@@ -198,7 +200,7 @@ inline void wait_pin(uint32_t pin) {
   while (digitalRead(pin) == HIGH);
 }
 
-inline void motor_signed_step(AF_Stepper& motor, posn pos) {
+inline void motor_signed_step(Adafruit_StepperMotor& motor, posn pos) {
   if (pos < 0) {
     motor.step(-pos, BACKWARD, DOUBLE);
   }
