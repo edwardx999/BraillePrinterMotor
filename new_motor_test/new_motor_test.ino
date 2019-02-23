@@ -12,6 +12,10 @@ class Stepper {
 
     void step(int number_of_steps)
     {
+      if (number_of_steps == 0)
+      {
+        return;
+      }
       if (number_of_steps >= 0)
       {
         digitalWrite(_dirpin, FORWARDS);
@@ -37,14 +41,13 @@ void setup() {
 
 
 int num_steps = 0;
-int sign=1;
+int sign = 1;
 void loop() {
   if (Serial.available())
   {
     unsigned char code = Serial.read();
     switch (code)
     {
-      case '-': sign=-sign;break;
       case '0':
       case '1':
       case '2':
@@ -58,10 +61,15 @@ void loop() {
         num_steps *= 10;
         num_steps += (code - '0');
         break;
-      default:
-        stepper.step(sign*num_steps);
+      case '-':
+        stepper.step(sign * num_steps);
         num_steps = 0;
-        sign=1;
+        sign = -1;
+        break;
+      default:
+        stepper.step(sign * num_steps);
+        num_steps = 0;
+        sign = 1;
         break;
     }
   }
