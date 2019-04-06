@@ -81,8 +81,8 @@ namespace ino {
 	};
 
 	template<typename T>
-	using make_signed_t=typename make_signed<T>::type;
-	
+	using make_unsigned_t=typename make_unsigned<T>::type;
+
 	template<typename T>
 	T&& declval();
 
@@ -101,7 +101,6 @@ namespace ino {
 
 	template<typename T>
 	using remove_reference_t=typename remove_reference<T>::type;
-
 
 	template<typename T>
 	struct remove_const {
@@ -147,8 +146,7 @@ namespace ino {
 	struct basic_common_type;
 
 	template<>
-	struct basic_common_type<> {
-	};
+	struct basic_common_type<> {};
 	template<typename T>
 	struct basic_common_type<T> {
 		using type=typename remove_cvref<T>::type;
@@ -158,10 +156,9 @@ namespace ino {
 		using type=typename remove_cvref<decltype(true?declval<T>():declval<U>())>::type;
 	};
 	template<typename T,typename U,typename... Rest>
-	struct basic_common_type<T,U,Rest...>:basic_common_type<typename basic_common_type<T,U>::type,Rest...>{
-	};
+	struct basic_common_type<T,U,Rest...>:basic_common_type<typename basic_common_type<T,U>::type,Rest...> {};
 
-	template<typename T>
-	using basic_common_type_t=typename basic_common_type<T>::type;
+	template<typename... T>
+	using basic_common_type_t=typename basic_common_type<T...>::type;
 }
 #endif
