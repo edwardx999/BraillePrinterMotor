@@ -77,7 +77,7 @@ namespace parse_braille {
 	typedef braille_symbol braille_word;
 	struct instruction_list {
 		std::unique_ptr<dot_pattern[]> data;
-		size_t size;
+		std::size_t size;
 	};
 	namespace symbol_constants {
 		extern braille_symbol const a;
@@ -148,14 +148,14 @@ namespace parse_braille {
 	/*
 		Converts an ASCII string into a series of braille dot_patterns and returns the size of the output.
 	*/
-	size_t parse_string(char const* input,unsigned char* output);
+	std::size_t parse_string(char const* input,unsigned char* output);
 
 	instruction_list parse_file(char const* filename);
 
 	inline instruction_list parse_file(char const* filename)
 	{
-		std::ifstream file(filename);
-		std::string input((std::istreambuf_iterator<char>(file)),std::istreambuf_iterator<char>());
+		std::ifstream file{filename};
+		std::string input{std::istreambuf_iterator<char>{file},std::istreambuf_iterator<char>{}};
 		instruction_list ret={std::make_unique<dot_pattern[]>(2*input.size())};
 		ret.size=parse_string(input.c_str(),ret.data.get());
 		return ret;
