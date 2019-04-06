@@ -24,18 +24,15 @@
     <ClInclude Include="parsebraille.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ino_type_traits.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="stepper.cpp">
-      <Filter>Source Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BraillePrinter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\..\..\Google Drive\Braille Project\Code\parsebraille.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="stepper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
