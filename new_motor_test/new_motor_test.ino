@@ -1,14 +1,20 @@
+#include <inostdpolyfill.h>
 
-int min_modular_distance(int a, int b, int mx)
+template<typename Int, typename Int2, typename Int3>
+ino::make_signed_t<ino::basic_common_type_t<Int, Int2, Int3>> min_modular_distance(Int from, Int2 to, Int3 mx)
 {
-  if (a == b)
+  using Ret = ino::make_signed_t<ino::basic_common_type_t<Int, Int2, Int3>>;
+  Ret const fixed_a = from;
+  Ret const fixed_b = to;
+  Ret const fixed_max = mx;
+  if (fixed_a == fixed_b)
   {
     return 0;
   }
-  if (a < b)
+  if (fixed_a < fixed_b)
   {
-    int forward_dist = b - a;
-    int backward_dist = a + mx - b;
+    Ret forward_dist = fixed_b - fixed_a;
+    Ret backward_dist = fixed_a + fixed_max - fixed_b;
     if (forward_dist <= backward_dist)
     {
       return forward_dist;
@@ -17,8 +23,8 @@ int min_modular_distance(int a, int b, int mx)
   }
   else
   {
-    int forward_dist = b - a;
-    int backward_dist = a - b;
+    Ret forward_dist = fixed_b - fixed_a;
+    Ret backward_dist = fixed_a - fixed_b;
     if (forward_dist <= backward_dist)
     {
       return forward_dist;
@@ -26,14 +32,16 @@ int min_modular_distance(int a, int b, int mx)
     return (backward_dist *= -1);
   }
 }
-int fix_to_range(int a, int mx)
+template<typename A, typename B>
+ino::make_unsigned_t<ino::basic_common_type_t<A, B>> fix_to_range(A a, B mx)
 {
   constexpr bool mod_positive = -5 % 2 == 1;
   if (mod_positive)
   {
     return a % mx;
   }
-  else {
+  else
+  {
     if (a < 0)
     {
       return a % mx + mx;
@@ -41,6 +49,7 @@ int fix_to_range(int a, int mx)
     return a % mx;
   }
 }
+
 using position = signed char;
 struct disk_positions {
   position left, right;
@@ -112,6 +121,7 @@ disk_positions const positions[] = {
   {30, 42}   //63 CAPITAL
   //{,},    //64
 };
+
 template<int Max>
 class Stepper {
   public:
@@ -139,16 +149,19 @@ class Stepper {
     }
   public:
 
-    Stepper(int dir, int step, int start_pos = 0): _dir_pin(dir), _step_pin(step), _pos(0) {
+    Stepper(int dir, int step, int start_pos = 0): _pos(start_pos), _dir_pin(dir), _step_pin(step)
+    {
       pinMode(_dir_pin, OUTPUT);
       pinMode(_step_pin, OUTPUT);
     }
 
-    void reset_position(int pos = 0) {
-      _pos = pos;
+    void reset_position(int pos = 0)
+    {
+      _pos = fix_to_range(pos, Max);
     }
 
-    int position() const {
+    int position() const
+    {
       return _pos;
     }
 
@@ -172,72 +185,71 @@ class Stepper {
       }
     }
 
-    void step_to(int pos) {
-      pos = fix_to_range(pos, Max);
+    void step_to(int pos)
+    {
       int diff = min_modular_distance(_pos, pos, Max);
-      if (diff == 0)
-      {
-        return;
-      }
-      if (diff > 0)
-      {
-        _pos = pos;
-        digitalWrite(_dir_pin, FORWARDS);
-        raw_step(diff);
-      }
-      else {
-        digitalWrite(_dir_pin, BACKWARDS);
-        raw_step(-diff);
-      }
+      step(diff);
     }
-    friend void multistep(Stepper* steppers, int* steps, size_t num)
+    template<typename Magnitude>
+    friend void multistep(Stepper* steppers, Magnitude* steps, size_t num)
     {
       for (size_t i = 0; i < num; ++i)
       {
         auto& stepper = steppers[i];
         auto& step = steps[i];
         if (step == 0) continue;
+        stepper._pos = fix_to_range(stepper._pos + step, Max);
         if (step > 0)
         {
-          stepper._pos = fix_to_range(stepper._pos + step, Max);
           digitalWrite(stepper._dir_pin, FORWARDS);
         }
-        else {
-          stepper._pos = fix_to_range(stepper._pos - step, Max);
+        else
+        {
           digitalWrite(stepper._dir_pin, BACKWARDS);
           step = -step;
         }
       }
-      while (true) {
-        bool finished=true;
+      while (true)
+      {
+        bool finished = true;
         for (size_t i = 0; i < num; ++i)
         {
-            auto& stepper = steppers[i];
-            auto& step = steps[i];
-            if(step>0)
-            {
-              digitalWrite(stepper._step_pin,HIGH);
-              --step;
-              finished=false;
-            }
+          auto& stepper = steppers[i];
+          auto& step = steps[i];
+          if (step > 0)
+          {
+            digitalWrite(stepper._step_pin, HIGH);
+            --step;
+            finished = false;
+          }
         }
         delay(SIGNAL_DELAY);
         for (size_t i = 0; i < num; ++i)
         {
-            auto& stepper = steppers[i];
-            digitalWrite(stepper._step_pin,LOW);
+          auto& stepper = steppers[i];
+          digitalWrite(stepper._step_pin, LOW);
         }
-        if(finished)
+        if (finished)
         {
           break;
         }
+        delay(SIGNAL_DELAY);
       }
+    }
+    template<typename Positions>
+    friend void multistep_to(Stepper* steppers, Positions* destinations, size_t count)
+    {
+      for (size_t i = 0; i < count; ++i)
+      {
+        destinations[i] = min_modular_distance(steppers[i]._pos, destinations[i], Max);
+      }
+      multistep(steppers, destinations, count);
     }
 };
 
-Stepper<48> steppers[2]={{6,3},{5,4}};
-auto& stepper=steppers[0];
-auto& stepper2=steppers[1];
+Stepper<48> steppers[2] = {{6, 3}, {5, 4}};
+auto& stepper = steppers[0];
+auto& stepper2 = steppers[1];
 int const pneumatic_port = 22;
 void setup() {
   Serial.begin(9600);
@@ -246,15 +258,15 @@ void setup() {
 }
 
 
-int num_steps = 0;
+int pos_index = 0;
 int sign = 1;
 bool pneumatic = 0;
 void loop() {
   //stepper.step(5);
   if (Serial.available())
   {
-    unsigned char code = Serial.read();
-    switch (code)
+    unsigned char in = Serial.read();
+    switch (in)
     {
       case 'p':
         {
@@ -272,26 +284,15 @@ void loop() {
       case '7':
       case '8':
       case '9':
-        num_steps *= 10;
-        num_steps += (code - '0');
+        pos_index *= 10;
+        pos_index += (in - '0');
         break;
-      case '-':
-        {
-          auto const count = sign * num_steps;
-          int steps[]={count,count};
-          multistep(steppers,steps,2);
-          num_steps = 0;
-          sign = -1;
-          break;
-        }
       default:
         {
-          auto const count = sign * num_steps;
-          int steps[]={count,count};
-          multistep(steppers,steps,2);
-          num_steps = 0;
-          sign = 1;
-          break;
+          Serial.println(pos_index);
+          int dests[2] = {positions[pos_index].left, positions[pos_index].right};
+          multistep_to(steppers, dests, 2);
+          pos_index=0;
         }
     }
   }
