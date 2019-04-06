@@ -6,15 +6,15 @@ namespace ino {
 	template<typename T,size_t N>
 	struct array {
 		T _data[N];
-		constexpr T* data()
+		T* data()
 		{
 			return _data;
 		}
-		constexpr T const* data() const
+		T const* data() const
 		{
 			return _data;
 		}
-		constexpr size_t size() const
+		size_t size() const
 		{
 			return N;
 		}
