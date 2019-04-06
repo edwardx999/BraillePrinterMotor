@@ -24,11 +24,14 @@
     <ClInclude Include="parsebraille.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ino_type_traits.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stepper.cpp">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="BraillePrinter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
