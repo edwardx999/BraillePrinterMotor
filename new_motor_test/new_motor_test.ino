@@ -1,9 +1,9 @@
 #include <inostdpolyfill.h>
 
 template<typename Int, typename Int2, typename Int3>
-ino::make_signed_t<ino::basic_common_type_t<Int, Int2, Int3>> min_modular_distance(Int from, Int2 to, Int3 mx)
+ino::make_signed_t<ino::common_type_t<Int, Int2, Int3>> min_modular_distance(Int from, Int2 to, Int3 mx)
 {
-  using Ret = ino::make_signed_t<ino::basic_common_type_t<Int, Int2, Int3>>;
+  using Ret = ino::make_signed_t<ino::common_type_t<Int, Int2, Int3>>;
   Ret const fixed_a = from;
   Ret const fixed_b = to;
   Ret const fixed_max = mx;
@@ -33,7 +33,7 @@ ino::make_signed_t<ino::basic_common_type_t<Int, Int2, Int3>> min_modular_distan
   }
 }
 template<typename A, typename B>
-ino::make_unsigned_t<ino::basic_common_type_t<A, B>> fix_to_range(A a, B mx)
+ino::make_unsigned_t<ino::common_type_t<A, B>> fix_to_range(A a, B mx)
 {
   constexpr bool mod_positive = -5 % 2 == 1;
   if (mod_positive)
@@ -51,8 +51,22 @@ ino::make_unsigned_t<ino::basic_common_type_t<A, B>> fix_to_range(A a, B mx)
 }
 
 using position = signed char;
-struct disk_positions {
-  position left, right;
+class disk_positions {
+  position _poses[2];
+public:
+  disk_positions(position left,position right):_poses{left,right}{}
+  position const* get() const{
+    return _poses;
+  }
+  position* get(){
+    return _poses;
+  }
+  position left() const{
+    return _poses[0];
+  }
+  position right() const{
+    return _poses[1];
+  }
 };
 disk_positions const positions[] = {
   {24, 24},    //0
@@ -290,8 +304,8 @@ void loop() {
       default:
         {
           Serial.println(pos_index);
-          int dests[2] = {positions[pos_index].left, positions[pos_index].right};
-          multistep_to(steppers, dests, 2);
+          auto dests=positions[pos_index];
+          multistep_to(steppers, dests.get(), 2);
           pos_index=0;
         }
     }

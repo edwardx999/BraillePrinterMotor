@@ -3,9 +3,9 @@
 #include <iostream>
 #include <array>
 template<typename Int,typename Int2,typename Int3>
-constexpr ino::make_signed_t<ino::basic_common_type_t<Int,Int2,Int3>> min_modular_distance(Int from,Int2 to,Int3 mx)
+constexpr ino::make_signed_t<ino::common_type_t<Int,Int2,Int3>> min_modular_distance(Int from,Int2 to,Int3 mx)
 {
-	using Ret=ino::make_signed_t<ino::basic_common_type_t<Int,Int2,Int3>>;
+	using Ret=ino::make_signed_t<ino::common_type_t<Int,Int2,Int3>>;
 	Ret const fixed_a=from;
 	Ret const fixed_b=to;
 	Ret const fixed_max=mx;
@@ -35,7 +35,7 @@ constexpr ino::make_signed_t<ino::basic_common_type_t<Int,Int2,Int3>> min_modula
 	}
 }
 template<typename A,typename B>
-constexpr ino::make_unsigned_t<ino::basic_common_type_t<A,B>> fix_to_range(A a,B mx)
+constexpr ino::make_unsigned_t<ino::common_type_t<A,B>> fix_to_range(A a,B mx)
 {
 	constexpr bool mod_positive=-5%2==1;
 	if(mod_positive)
@@ -208,7 +208,7 @@ public:
 			auto& stepper=steppers[i];
 			auto& step=steps[i];
 			if(step==0) continue;
-			stepper._pos=fix_to_range(stepper._pos+step,Max);
+			stepper.reset_position(fix_to_range(stepper._pos+step,Max));
 			if(step>0)
 			{
 				digitalWrite(stepper._dir_pin,FORWARDS);
@@ -251,7 +251,7 @@ public:
 	{
 		for(size_t i=0;i<count;++i)
 		{
-			destinations[i]=min_modular_distance(steppers[i]._pos,destinations[i],Max);
+			destinations[i]=min_modular_distance(steppers[i].position(),destinations[i],Max);
 		}
 		multistep(steppers,destinations,count);
 	}
@@ -262,12 +262,17 @@ constexpr auto do_one()
 	ino::array<Stepper<48>,2> steppers{{{0,0},{0,0}}};
 	steppers.data()[0].reset_position(21);
 	steppers.data()[1].reset_position(13);
-	int poses[2]={3,13};
+	int poses[2]={3,21};
 	multistep_to(steppers.data(),poses,2);
 	return steppers;
 }
 int main()
 {
+	constexpr auto dist=min_modular_distance(short{5},signed char{0},short{48});
+	using T0=decltype(ino::declval<short>());
+	using T=ino::common_type<short,signed char>::type;
 	constexpr auto stepper=do_one();
+	using T1=typename ino::decay<int const&>::type;
+	T i=4;
 	std::cout<<"Si";
 }

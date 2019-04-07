@@ -6,15 +6,15 @@ namespace ino {
 	template<typename T,size_t N>
 	struct array {
 		T _data[N];
-		T* data()
+		constexpr T* data()
 		{
 			return _data;
 		}
-		T const* data() const
+		constexpr T const* data() const
 		{
 			return _data;
 		}
-		size_t size() const
+		constexpr size_t size() const
 		{
 			return N;
 		}
@@ -142,23 +142,35 @@ namespace ino {
 	template<typename T>
 	using remove_cvref_t=typename remove_cvref<T>::type;
 
+	template<typename T>
+	struct decay {
+	private:
+		template<typename U>
+		static U decayed(U);
+	public:
+		using type=decltype(decayed(declval<T>()));
+	};
+
+	template<typename T>
+	using decay_t=typename decay<T>::type;
+
 	template<typename... Types>
-	struct basic_common_type;
+	struct common_type;
 
 	template<>
-	struct basic_common_type<> {};
+	struct common_type<> {};
 	template<typename T>
-	struct basic_common_type<T> {
-		using type=typename remove_cvref<T>::type;
+	struct common_type<T> {
+		using type=decay_t<T>;
 	};
 	template<typename T,typename U>
-	struct basic_common_type<T,U> {
-		using type=typename remove_cvref<decltype(true?declval<T>():declval<U>())>::type;
+	struct common_type<T,U> {
+		using type=decay_t<decltype(false?declval<T>():declval<U>())>;
 	};
 	template<typename T,typename U,typename... Rest>
-	struct basic_common_type<T,U,Rest...>:basic_common_type<typename basic_common_type<T,U>::type,Rest...> {};
+	struct common_type<T,U,Rest...>:common_type<typename common_type<T,U>::type,Rest...> {};
 
 	template<typename... T>
-	using basic_common_type_t=typename basic_common_type<T...>::type;
+	using common_type_t=typename common_type<T...>::type;
 }
 #endif
