@@ -52,21 +52,21 @@ ino::make_unsigned_t<ino::common_type_t<A, B>> fix_to_range(A a, B mx)
 
 using position = signed char;
 class disk_positions {
-  position _poses[2];
-public:
-  disk_positions(position left,position right):_poses{left,right}{}
-  position const* get() const{
-    return _poses;
-  }
-  position* get(){
-    return _poses;
-  }
-  position left() const{
-    return _poses[0];
-  }
-  position right() const{
-    return _poses[1];
-  }
+    position _poses[2];
+  public:
+    disk_positions(position left, position right): _poses{left, right} {}
+    position const* get() const {
+      return _poses;
+    }
+    position* get() {
+      return _poses;
+    }
+    position left() const {
+      return _poses[0];
+    }
+    position right() const {
+      return _poses[1];
+    }
 };
 disk_positions const positions[] = {
   {24, 24},    //0
@@ -136,16 +136,55 @@ disk_positions const positions[] = {
   //{,},    //64
 };
 
+template<typename Device>
+class enable_guard {
+    Device* _device;
+  public:
+    enable_guard() = delete;
+    enable_guard(enable_guard const&) = delete;
+    enable_guard(Device& device): _device{&device} {
+      _device->enable();
+    }
+    ~enable_guard()
+    {
+      _device->disable();
+    }
+};
+
+template<typename Device>
+class multi_enable_guard {
+    ino::span<Device> _devices;
+  public:
+    multi_enable_guard() = delete;
+    multi_enable_guard(multi_enable_guard const&) = delete;
+    multi_enable_guard(Device* devices, size_t n): _devices{devices, n} {
+      for (auto& device : _devices)
+      {
+        device.enable();
+      }
+    }
+    ~multi_enable_guard()
+    {
+      for (auto& device : _devices)
+      {
+        device.disable();
+      }
+    }
+};
+
 template<int Max>
 class Stepper {
   public:
-    static constexpr int FORWARDS = HIGH;
-    static constexpr int BACKWARDS = LOW;
+    static constexpr auto FORWARDS = HIGH;
+    static constexpr auto BACKWARDS = LOW;
     static constexpr int SIGNAL_DELAY = 1;
+    static constexpr auto DISABLE = HIGH;
+    static constexpr auto ENABLE = LOW;
   private:
     int _pos;
     int _dir_pin;
     int _step_pin;
+    int _enable_pin;
     void step1()
     {
       digitalWrite(_step_pin, HIGH);
@@ -162,11 +201,22 @@ class Stepper {
       }
     }
   public:
-
-    Stepper(int dir, int step, int start_pos = 0): _pos(start_pos), _dir_pin(dir), _step_pin(step)
+    Stepper() = delete;
+    Stepper(Stepper const&) = delete;
+    Stepper(int dir, int step, int enable_pin, int start_pos = 0): _pos{start_pos}, _dir_pin{dir}, _step_pin{step}, _enable_pin{enable_pin}
     {
       pinMode(_dir_pin, OUTPUT);
       pinMode(_step_pin, OUTPUT);
+      pinMode(_enable_pin, OUTPUT);
+      disable();
+    }
+
+    void disable() {
+      digitalWrite(_enable_pin, DISABLE);
+    }
+
+    void enable() {
+      digitalWrite(_enable_pin, ENABLE);
     }
 
     void reset_position(int pos = 0)
@@ -181,6 +231,7 @@ class Stepper {
 
     void step(int number_of_steps)
     {
+      enable_guard<Stepper> guard{*this};
       if (number_of_steps == 0)
       {
         return;
@@ -207,6 +258,7 @@ class Stepper {
     template<typename Magnitude>
     friend void multistep(Stepper* steppers, Magnitude* steps, size_t num)
     {
+      multi_enable_guard<Stepper> guard{steppers, num};
       for (size_t i = 0; i < num; ++i)
       {
         auto& stepper = steppers[i];
@@ -261,7 +313,7 @@ class Stepper {
     }
 };
 
-Stepper<48> steppers[2] = {{6, 3}, {5, 4}};
+Stepper<48> steppers[2] = {{6, 3, 52}, {5, 4, 52}};
 auto& stepper = steppers[0];
 auto& stepper2 = steppers[1];
 int const pneumatic_port = 22;
@@ -304,9 +356,9 @@ void loop() {
       default:
         {
           Serial.println(pos_index);
-          auto dests=positions[pos_index];
+          auto dests = positions[pos_index];
           multistep_to(steppers, dests.get(), 2);
-          pos_index=0;
+          pos_index = 0;
         }
     }
   }

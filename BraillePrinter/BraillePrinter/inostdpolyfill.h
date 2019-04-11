@@ -1,24 +1,8 @@
 #pragma once
 #ifndef INO_STD_POLYFILL_H
 #define INO_STD_POLYFILL_H
-#include <stdint.h>
 namespace ino {
-	template<typename T,size_t N>
-	struct array {
-		T _data[N];
-		constexpr T* data()
-		{
-			return _data;
-		}
-		constexpr T const* data() const
-		{
-			return _data;
-		}
-		constexpr size_t size() const
-		{
-			return N;
-		}
-	};
+	
 	template<typename T>
 	struct make_signed {
 		using type=T;
@@ -142,35 +126,125 @@ namespace ino {
 	template<typename T>
 	using remove_cvref_t=typename remove_cvref<T>::type;
 
-	template<typename T>
-	struct decay {
-	private:
-		template<typename U>
-		static U decayed(U);
-	public:
-		using type=decltype(decayed(declval<T>()));
-	};
-
-	template<typename T>
-	using decay_t=typename decay<T>::type;
-
 	template<typename... Types>
 	struct common_type;
 
 	template<>
 	struct common_type<> {};
+
 	template<typename T>
 	struct common_type<T> {
-		using type=decay_t<T>;
+		using type=remove_cvref_t<T>;
 	};
+
 	template<typename T,typename U>
 	struct common_type<T,U> {
-		using type=decay_t<decltype(false?declval<T>():declval<U>())>;
+		using type=remove_cvref_t<decltype(false?declval<T>():declval<U>())>;
 	};
+
 	template<typename T,typename U,typename... Rest>
 	struct common_type<T,U,Rest...>:common_type<typename common_type<T,U>::type,Rest...> {};
 
 	template<typename... T>
 	using common_type_t=typename common_type<T...>::type;
+
+	template<typename T,size_t N>
+	struct array {
+		T _data[N];
+		using value_type=remove_cvref_t<T>;
+		using iterator=T*;
+		using const_iterator=T const*;
+		using reference=T&;
+		using const_reference=T const&;
+		using size_type=size_t;
+		using difference_type=make_signed_t<size_type>;
+		T* data()
+		{
+			return _data;
+		}
+		T const* data() const
+		{
+			return _data;
+		}
+		size_t size() const
+		{
+			return N;
+		}
+		T* begin()
+		{
+			return _data;
+		}
+		T* end()
+		{
+			return _data+N;
+		}
+		T const* begin() const
+		{
+			return _data;
+		}
+		T const* end() const
+		{
+			return _data+N;
+		}
+		reference operator[](size_t n)
+		{
+			return _data[n];
+		}
+		const_reference operator[](size_t n) const
+		{
+			return _data[n];
+		}
+	};
+	template<typename T>
+	class span {
+	private:
+		T* _data;
+		size_t _count;
+	public:
+		span(T* data=nullptr,size_t count=0):_data{data},_count{count}{}
+		using value_type=remove_cvref_t<T>;
+		using iterator=T*;
+		using const_iterator=T const*;
+		using reference=T&;
+		using const_reference=T const&;
+		using size_type=size_t;
+		using difference_type=typename make_signed<size_type>::type;
+		T* data()
+		{
+			return _data;
+		}
+		T const* data() const
+		{
+			return _data;
+		}
+		size_t size() const
+		{
+			return _count;
+		}
+		T* begin()
+		{
+			return _data;
+		}
+		T* end()
+		{
+			return _data+_count;
+		}
+		T const* begin() const
+		{
+			return _data;
+		}
+		T const* end() const
+		{
+			return _data+_count;
+		}
+		reference operator[](size_t n)
+		{
+			return _data[n];
+		}
+		const_reference operator[](size_t n) const
+		{
+			return _data[n];
+		}
+	};
 }
 #endif
