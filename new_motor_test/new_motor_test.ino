@@ -163,6 +163,8 @@ class multi_enable_guard {
         device.enable();
       }
     }
+    template<size_t N>
+    multi_enable_guard(Device (&devices)[N]): multi_enable_guard{devices, N}{}
     ~multi_enable_guard()
     {
       for (auto& device : _devices)
@@ -335,7 +337,10 @@ void loop() {
     switch (in)
     {
       case 'p':
+      case 'P':
         {
+          multi_enable_guard<Stepper<48>> guard{steppers};
+          Serial.println("Pneumatic");
           pneumatic = !pneumatic;
           digitalWrite(pneumatic_port, pneumatic);
           break;
@@ -356,8 +361,14 @@ void loop() {
       default:
         {
           Serial.println(pos_index);
-          auto dests = positions[pos_index];
-          multistep_to(steppers, dests.get(), 2);
+          if(pos_index<ino::array_size<decltype(positions)>::value)
+          {
+            auto dests = positions[pos_index];
+            multistep_to(steppers, dests.get(), 2);
+          }
+          else{
+            Serial.println("Invalid Index");
+          }
           pos_index = 0;
         }
     }

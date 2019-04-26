@@ -246,5 +246,18 @@ namespace ino {
 			return _data[n];
 		}
 	};
+
+	template<typename Array>
+	struct array_size;
+
+	template<typename T,size_t N>
+	struct array_size<T[N]> {
+		static constexpr auto value=N;
+	};
+
+	template<typename T,size_t N>
+	struct array_size<array<T,N>> {
+		static constexpr auto value=N;
+	};
 }
 #endif
