@@ -164,7 +164,7 @@ class multi_enable_guard {
       }
     }
     template<size_t N>
-    multi_enable_guard(Device (&devices)[N]): multi_enable_guard{devices, N}{}
+    multi_enable_guard(Device (&devices)[N]): multi_enable_guard{devices, N} {}
     ~multi_enable_guard()
     {
       for (auto& device : _devices)
@@ -315,34 +315,153 @@ class Stepper {
     }
 };
 
-Stepper<48> steppers[2] = {{6, 3, 52}, {5, 4, 52}};
-auto& stepper = steppers[0];
-auto& stepper2 = steppers[1];
-int const pneumatic_port = 22;
+class PinGuard {
+    int _number;
+  public:
+    PinGuard(int number): _number{number} {
+      digitalWrite(_number, HIGH);
+    }
+    ~PinGuard() {
+      digitalWrite(_number, LOW);
+    }
+};
+
+
+class MotorForwardGuard;
+class MotorBackwardGuard;
+
+class SimpleMotor {
+    int _forward_pin;
+    int _backward_pin;
+    int _enable_pin;
+  public:
+    SimpleMotor(int forward, int backward, int enable): _forward_pin{forward}, _backward_pin{backward}, _enable_pin{enable} {
+      pinMode(forward, OUTPUT);
+      pinMode(backward, OUTPUT);
+      pinMode(enable, OUTPUT);
+    }
+    void forward(bool on = true) {
+      digitalWrite(_backward_pin, LOW);
+      digitalWrite(_forward_pin, on ? HIGH : LOW);
+    }
+    void backward(bool on = true) {
+      digitalWrite(_forward_pin, LOW);
+      digitalWrite(_backward_pin, on ? HIGH : LOW);
+    }
+    void speed(unsigned char spd)
+    {
+      enable(spd);
+    }
+    void enable(unsigned char speed = 255) {
+      analogWrite(_enable_pin, speed);
+    }
+    void disable() {
+      enable(0);
+    }
+    friend MotorForwardGuard;
+    friend MotorBackwardGuard;
+};
+
+namespace detail {
+class MotorGuardBase {
+    int _pin;
+  protected:
+    MotorGuardBase(int pin): _pin{pin} {
+      digitalWrite(_pin, HIGH);
+    }
+  public:
+    ~MotorGuardBase() {
+      digitalWrite(_pin, LOW);
+    }
+};
+}
+class MotorForwardGuard: detail::MotorGuardBase {
+  public:
+    MotorForwardGuard(SimpleMotor& motor): MotorGuardBase{motor._forward_pin} {
+    }
+};
+
+class MotorBackwardGuard: detail::MotorGuardBase {
+    int _pin;
+  public:
+    MotorBackwardGuard(SimpleMotor& motor): MotorGuardBase{motor._backward_pin} {
+    }
+};
+
+class Pneumatic {
+    int _pin;
+  public:
+    Pneumatic() = delete;
+    Pneumatic(Pneumatic const&) = delete;
+    Pneumatic(int pin): _pin{pin} {
+      pinMode(_pin, OUTPUT);
+    }
+    void actuate(bool extend) {
+      digitalWrite(_pin, extend ? HIGH : LOW);
+    }
+    void extend() {
+      actuate(true);
+    }
+    void retract() {
+      actuate(false);
+    }
+};
+
+Stepper<48> steppers[2] = {{6, 7, 8}, {5, 4, 8}};
+auto& stepper0 = steppers[0];
+auto& stepper1 = steppers[1];
+Pneumatic pneumatic{12};
+SimpleMotor feed_motor{1, 7, A5};
 void setup() {
   Serial.begin(9600);
-  pinMode(pneumatic_port, OUTPUT);
-  digitalWrite(pneumatic_port, 0);
 }
 
-
-int pos_index = 0;
-int sign = 1;
-bool pneumatic = 0;
+unsigned int pos_index = 0;
+bool pos_initialized = false;
+bool pneumatic_extended = false;
 void loop() {
-  //stepper.step(5);
   if (Serial.available())
   {
     unsigned char in = Serial.read();
     switch (in)
     {
+      case 'f':
+        {
+          Serial.println("Forward Off");
+          //analogWrite(A5, 0);
+          feed_motor.disable();
+          feed_motor.forward(false);
+          break;
+        }
+      case 'F':
+        {
+          Serial.println("Forward On");
+          //analogWrite(A5, 255);
+          feed_motor.enable();
+          feed_motor.forward();
+          break;
+        }
+      case 'b':
+        {
+          Serial.println("Backward Off");
+          feed_motor.disable();
+          feed_motor.backward(false);
+          break;
+        }
+      case 'B':
+        {
+          Serial.println("Backward On");
+          feed_motor.enable();
+          feed_motor.backward();
+          break;
+        }
       case 'p':
       case 'P':
         {
-          multi_enable_guard<Stepper<48>> guard{steppers};
           Serial.println("Pneumatic");
-          pneumatic = !pneumatic;
-          digitalWrite(pneumatic_port, pneumatic);
+          multi_enable_guard<Stepper<48>> guard{steppers};
+          pneumatic_extended = !pneumatic_extended;
+          pneumatic.actuate(pneumatic_extended);
           break;
         }
       case '0':
@@ -357,19 +476,24 @@ void loop() {
       case '9':
         pos_index *= 10;
         pos_index += (in - '0');
+        pos_initialized = true;
         break;
       default:
         {
-          Serial.println(pos_index);
-          if(pos_index<ino::array_size<decltype(positions)>::value)
+          if (pos_initialized)
           {
-            auto dests = positions[pos_index];
-            multistep_to(steppers, dests.get(), 2);
+            Serial.println(pos_index);
+            if (pos_index < ino::array_size<decltype(positions)>::value)
+            {
+              auto dests = positions[pos_index];
+              multistep_to(steppers, dests.get(), 2);
+            }
+            else {
+              Serial.println("Invalid Index");
+            }
+            pos_index = 0;
+            pos_initialized = false;
           }
-          else{
-            Serial.println("Invalid Index");
-          }
-          pos_index = 0;
         }
     }
   }
