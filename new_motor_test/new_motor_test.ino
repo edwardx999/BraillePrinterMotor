@@ -431,7 +431,7 @@ void loop() {
           //analogWrite(A5, 0);
           feed_motor.disable();
           feed_motor.forward(false);
-          break;
+          return;
         }
       case 'F':
         {
@@ -439,21 +439,22 @@ void loop() {
           //analogWrite(A5, 255);
           feed_motor.enable();
           feed_motor.forward();
-          break;
+          return;
         }
       case 'b':
         {
           Serial.println("Backward Off");
           feed_motor.disable();
           feed_motor.backward(false);
-          break;
+          return;
         }
       case 'B':
         {
           Serial.println("Backward On");
           feed_motor.enable();
           feed_motor.backward();
-          break;
+          feed_motor.enable();
+          return;
         }
       case 'p':
       case 'P':
@@ -462,7 +463,7 @@ void loop() {
           multi_enable_guard<Stepper<48>> guard{steppers};
           pneumatic_extended = !pneumatic_extended;
           pneumatic.actuate(pneumatic_extended);
-          break;
+          return;
         }
       case '0':
       case '1':
