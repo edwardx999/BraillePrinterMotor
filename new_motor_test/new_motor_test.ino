@@ -194,6 +194,7 @@ class Stepper {
       digitalWrite(_step_pin, LOW);
       delay(SIGNAL_DELAY);
     }
+  public:
     void raw_step(int num_steps)
     {
       step1();
@@ -202,7 +203,6 @@ class Stepper {
         step1();
       }
     }
-  public:
     Stepper() = delete;
     Stepper(Stepper const&) = delete;
     Stepper(int dir, int step, int enable_pin, int start_pos = 0): _pos{start_pos}, _dir_pin{dir}, _step_pin{step}, _enable_pin{enable_pin}
@@ -231,6 +231,10 @@ class Stepper {
       return _pos;
     }
 
+    void direction(bool forward)
+    {
+      digitalWrite(_dir_pin, forward?FORWARDS:BACKWARDS);
+    }
     void step(int number_of_steps)
     {
       enable_guard<Stepper> guard{*this};
@@ -257,6 +261,7 @@ class Stepper {
       int diff = min_modular_distance(_pos, pos, Max);
       step(diff);
     }
+    
     template<typename Magnitude>
     friend void multistep(Stepper* steppers, Magnitude* steps, size_t num)
     {
@@ -342,10 +347,12 @@ class SimpleMotor {
     }
     void forward(bool on = true) {
       digitalWrite(_backward_pin, LOW);
+      delay(10);
       digitalWrite(_forward_pin, on ? HIGH : LOW);
     }
     void backward(bool on = true) {
       digitalWrite(_forward_pin, LOW);
+      delay(10); 
       digitalWrite(_backward_pin, on ? HIGH : LOW);
     }
     void speed(unsigned char spd)
@@ -408,10 +415,12 @@ class Pneumatic {
 };
 
 Stepper<48> steppers[2] = {{6, 7, 8}, {5, 4, 8}};
+Stepper<48> slide_motor={13,12,11};
 auto& stepper0 = steppers[0];
 auto& stepper1 = steppers[1];
 Pneumatic pneumatic{12};
-SimpleMotor feed_motor{1, 7, A5};
+SimpleMotor feed_motor{1, 2, A5};
+unsigned char current_speed=128;
 void setup() {
   Serial.begin(9600);
 }
@@ -437,7 +446,7 @@ void loop() {
         {
           Serial.println("Forward On");
           //analogWrite(A5, 255);
-          feed_motor.enable();
+          feed_motor.enable(current_speed+=10);
           feed_motor.forward();
           return;
         }
@@ -451,11 +460,29 @@ void loop() {
       case 'B':
         {
           Serial.println("Backward On");
-          feed_motor.enable();
+          feed_motor.enable(current_speed+=10);
           feed_motor.backward();
-          feed_motor.enable();
           return;
         }
+        case 's':
+    {
+      Serial.println("Slide backward");
+      slide_motor.direction(true);
+      slide_motor.enable();
+      slide_motor.raw_step(10);
+      slide_motor.disable();
+      return;
+    }
+    
+        case 'S':
+    {
+      Serial.println("Slide forward");
+      slide_motor.direction(false);
+      slide_motor.enable();
+      slide_motor.raw_step(10);
+      slide_motor.disable();
+      return;
+    }
       case 'p':
       case 'P':
         {
