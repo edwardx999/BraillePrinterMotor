@@ -233,7 +233,7 @@ class Stepper {
 
     void direction(bool forward)
     {
-      digitalWrite(_dir_pin, forward?FORWARDS:BACKWARDS);
+      digitalWrite(_dir_pin, forward ? FORWARDS : BACKWARDS);
     }
     void step(int number_of_steps)
     {
@@ -261,7 +261,7 @@ class Stepper {
       int diff = min_modular_distance(_pos, pos, Max);
       step(diff);
     }
-    
+
     template<typename Magnitude>
     friend void multistep(Stepper* steppers, Magnitude* steps, size_t num)
     {
@@ -352,7 +352,7 @@ class SimpleMotor {
     }
     void backward(bool on = true) {
       digitalWrite(_forward_pin, LOW);
-      delay(10); 
+      delay(10);
       digitalWrite(_backward_pin, on ? HIGH : LOW);
     }
     void speed(unsigned char spd)
@@ -414,13 +414,65 @@ class Pneumatic {
     }
 };
 
+class WeirdMotor {
+    int _forward_pin;
+    int _backward_pin;
+  public:
+    WeirdMotor(int f, int b): _forward_pin{f}, _backward_pin{b}
+    {
+      pinMode(_forward_pin, OUTPUT);
+      pinMode(_backward_pin, OUTPUT);
+    }
+
+    void speed(int speed)
+    {
+      if (speed == 0)
+      {
+        analogWrite(_backward_pin, 0);
+        analogWrite(_forward_pin, 0);
+      }
+      if (speed > 0)
+      {
+        analogWrite(_backward_pin, 0);
+        delay(10);
+        analogWrite(_forward_pin, speed);
+      }
+      else
+      {
+        analogWrite(_forward_pin, 0);
+        delay(10);
+        analogWrite(_backward_pin, -speed);
+      }
+    }
+    void forward(bool f = true) {
+      if (f) {
+        speed(255);
+      }
+      else {
+        speed(0);
+      }
+    }
+    void enable(bool=true){}
+    void backward(bool b = true) {
+      if (b) {
+        speed(-255);
+      }
+      else {
+        speed(0);
+      }
+    }
+    void disable()
+    {
+      speed(0);
+    }
+};
+
 Stepper<48> steppers[2] = {{6, 7, 8}, {5, 4, 8}};
-Stepper<48> slide_motor={13,12,11};
+Stepper<48> slide_motor = {13, 12, 11};
 auto& stepper0 = steppers[0];
 auto& stepper1 = steppers[1];
 Pneumatic pneumatic{12};
-SimpleMotor feed_motor{1, 2, A5};
-unsigned char current_speed=128;
+WeirdMotor feed_motor{5, 10};
 void setup() {
   Serial.begin(9600);
 }
@@ -428,6 +480,7 @@ void setup() {
 unsigned int pos_index = 0;
 bool pos_initialized = false;
 bool pneumatic_extended = false;
+unsigned char feed_speed=0;
 void loop() {
   if (Serial.available())
   {
@@ -439,15 +492,15 @@ void loop() {
           Serial.println("Forward Off");
           //analogWrite(A5, 0);
           feed_motor.disable();
-          feed_motor.forward(false);
+          feed_motor.speed(feed_speed=0);
           return;
         }
       case 'F':
         {
           Serial.println("Forward On");
           //analogWrite(A5, 255);
-          feed_motor.enable(current_speed+=10);
-          feed_motor.forward();
+          feed_motor.enable();
+          feed_motor.speed(255);
           return;
         }
       case 'b':
@@ -460,29 +513,31 @@ void loop() {
       case 'B':
         {
           Serial.println("Backward On");
-          feed_motor.enable(current_speed+=10);
-          feed_motor.backward();
+          feed_motor.enable();
+          feed_motor.speed(-200);
+          delay(40);
+          feed_motor.disable();
           return;
         }
-        case 's':
-    {
-      Serial.println("Slide backward");
-      slide_motor.direction(true);
-      slide_motor.enable();
-      slide_motor.raw_step(10);
-      slide_motor.disable();
-      return;
-    }
-    
-        case 'S':
-    {
-      Serial.println("Slide forward");
-      slide_motor.direction(false);
-      slide_motor.enable();
-      slide_motor.raw_step(10);
-      slide_motor.disable();
-      return;
-    }
+      case 's':
+        {
+          Serial.println("Slide backward");
+          slide_motor.direction(true);
+          slide_motor.enable();
+          slide_motor.raw_step(300);
+          slide_motor.disable();
+          return;
+        }
+
+      case 'S':
+        {
+          Serial.println("Slide forward");
+          slide_motor.direction(false);
+          slide_motor.enable();
+          slide_motor.raw_step(300);
+          slide_motor.disable();
+          return;
+        }
       case 'p':
       case 'P':
         {
