@@ -139,14 +139,17 @@ disk_positions const positions[] = {
 template<typename Device>
 class enable_guard {
     Device* _device;
+    int _delay;
   public:
     enable_guard() = delete;
     enable_guard(enable_guard const&) = delete;
-    enable_guard(Device& device): _device{&device} {
+    enable_guard(Device& device,int delay_microseconds=5000): _device{&device},_delay{delay_microseconds} {
       _device->enable();
+      delayMicroseconds(_delay);
     }
     ~enable_guard()
     {
+      delayMicroseconds(_delay);
       _device->disable();
     }
 };
@@ -154,19 +157,22 @@ class enable_guard {
 template<typename Device>
 class multi_enable_guard {
     ino::span<Device> _devices;
+    int _delay;
   public:
     multi_enable_guard() = delete;
     multi_enable_guard(multi_enable_guard const&) = delete;
-    multi_enable_guard(Device* devices, size_t n): _devices{devices, n} {
+    multi_enable_guard(Device* devices, size_t n, int delay_microseconds=5000): _devices{devices, n},_delay{delay_microseconds} {
       for (auto& device : _devices)
       {
         device.enable();
       }
+      delayMicroseconds(_delay);
     }
     template<size_t N>
     multi_enable_guard(Device (&devices)[N]): multi_enable_guard{devices, N} {}
     ~multi_enable_guard()
     {
+      delayMicroseconds(_delay);
       for (auto& device : _devices)
       {
         device.disable();
@@ -174,12 +180,12 @@ class multi_enable_guard {
     }
 };
 
-template<int Max>
+template<int Max,int signal_delay_microseconds=500>
 class Stepper {
   public:
     static constexpr auto FORWARDS = HIGH;
     static constexpr auto BACKWARDS = LOW;
-    static constexpr int SIGNAL_DELAY = 1;
+    static constexpr int SIGNAL_DELAY = signal_delay_microseconds;
     static constexpr auto DISABLE = HIGH;
     static constexpr auto ENABLE = LOW;
   private:
@@ -190,9 +196,9 @@ class Stepper {
     void step1()
     {
       digitalWrite(_step_pin, HIGH);
-      delay(SIGNAL_DELAY);
+      delayMicroseconds(SIGNAL_DELAY);
       digitalWrite(_step_pin, LOW);
-      delay(SIGNAL_DELAY);
+      delayMicroseconds(SIGNAL_DELAY);
     }
   public:
     void raw_step(int num_steps)
@@ -296,7 +302,7 @@ class Stepper {
             finished = false;
           }
         }
-        delay(SIGNAL_DELAY);
+        delayMicroseconds(SIGNAL_DELAY);
         for (size_t i = 0; i < num; ++i)
         {
           auto& stepper = steppers[i];
@@ -306,7 +312,7 @@ class Stepper {
         {
           break;
         }
-        delay(SIGNAL_DELAY);
+        delayMicroseconds(SIGNAL_DELAY);
       }
     }
     template<typename Positions>
@@ -467,8 +473,10 @@ class WeirdMotor {
     }
 };
 
-Stepper<48> steppers[2] = {{6, 7, 8}, {5, 4, 8}};
-Stepper<48> slide_motor = {13, 12, 11};
+using DiscStepper=Stepper<48,1000>;
+DiscStepper steppers[2] = {{6, 7, 8}, {5, 4, 8}};
+using SlideStepper=Stepper<48,1100>;
+SlideStepper slide_motor = {13, 12, 11};
 auto& stepper0 = steppers[0];
 auto& stepper1 = steppers[1];
 Pneumatic pneumatic{12};
@@ -524,8 +532,8 @@ void loop() {
           Serial.println("Slide backward");
           slide_motor.direction(true);
           slide_motor.enable();
-          slide_motor.raw_step(300);
-          slide_motor.disable();
+          enable_guard<SlideStepper> guard{slide_motor};
+          slide_motor.raw_step(150);
           return;
         }
 
@@ -533,16 +541,15 @@ void loop() {
         {
           Serial.println("Slide forward");
           slide_motor.direction(false);
-          slide_motor.enable();
-          slide_motor.raw_step(300);
-          slide_motor.disable();
+          enable_guard<SlideStepper> guard{slide_motor};
+          slide_motor.raw_step(150);
           return;
         }
       case 'p':
       case 'P':
         {
           Serial.println("Pneumatic");
-          multi_enable_guard<Stepper<48>> guard{steppers};
+          multi_enable_guard<DiscStepper> guard{steppers};
           pneumatic_extended = !pneumatic_extended;
           pneumatic.actuate(pneumatic_extended);
           return;
