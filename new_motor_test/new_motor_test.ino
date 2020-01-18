@@ -169,7 +169,7 @@ class multi_enable_guard {
       delayMicroseconds(_delay);
     }
     template<size_t N>
-    multi_enable_guard(Device (&devices)[N]): multi_enable_guard{devices, N} {}
+    multi_enable_guard(Device (&devices)[N], int delay_microseconds=5000): multi_enable_guard{devices, N, 5000} {}
     ~multi_enable_guard()
     {
       delayMicroseconds(_delay);
@@ -474,12 +474,12 @@ class WeirdMotor {
 };
 
 using DiscStepper=Stepper<48,1000>;
-DiscStepper steppers[2] = {{6, 7, 8}, {5, 4, 8}};
+DiscStepper steppers[2] = {{6, 7, 8}, {3, 4, 8}};
 using SlideStepper=Stepper<48,1100>;
 SlideStepper slide_motor = {13, 12, 11};
 auto& stepper0 = steppers[0];
 auto& stepper1 = steppers[1];
-Pneumatic pneumatic{12};
+Pneumatic pneumatic{2};
 WeirdMotor feed_motor{5, 10};
 void setup() {
   Serial.begin(9600);
@@ -496,7 +496,7 @@ void loop() {
     switch (in)
     {
       case 'f':
-        {
+        { 
           Serial.println("Forward Off");
           //analogWrite(A5, 0);
           feed_motor.disable();
@@ -548,9 +548,14 @@ void loop() {
       case 'p':
       case 'P':
         {
-          Serial.println("Pneumatic");
-          multi_enable_guard<DiscStepper> guard{steppers};
           pneumatic_extended = !pneumatic_extended;
+          if(pneumatic_extended){          
+            Serial.println("Pneumatic extended");
+            }
+            else{
+              Serial.println("Pneumatic unextended");
+            }
+          multi_enable_guard<DiscStepper> guard{steppers};
           pneumatic.actuate(pneumatic_extended);
           return;
         }
